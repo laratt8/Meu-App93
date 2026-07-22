@@ -13,12 +13,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
     private ImageView screenView;
     private WebSocketClient client;
     private Handler handler = new Handler(Looper.getMainLooper());

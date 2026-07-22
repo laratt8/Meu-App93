@@ -1,15 +1,19 @@
 package com.example.remoteserver;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.net.wifi.WifiManager;
 
-public class MainActivity extends Activity {
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_SCREEN_CAPTURE = 1;
     private MediaProjectionManager projectionManager;
     private TextView statusText;
@@ -23,7 +27,6 @@ public class MainActivity extends Activity {
         layout.setPadding(50, 50, 50, 50);
         
         statusText = new TextView(this);
-        statusText.setText("Servidor Parado\nAguardando início...");
         statusText.setTextSize(18);
         
         Button btn = new Button(this);
@@ -35,6 +38,14 @@ public class MainActivity extends Activity {
         setContentView(layout);
 
         projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
+
+        // Mostrar IP local (se disponível)
+        String ip = getLocalIpAddress();
+        if (ip != null) {
+            statusText.setText("Servidor Parado\nIP: " + ip + "\nAguardando início...");
+        } else {
+            statusText.setText("Servidor Parado\nAguardando início...");
+        }
     }
 
     private void startScreenCapture() {
@@ -52,6 +63,18 @@ public class MainActivity extends Activity {
             
             statusText.setText("✅ SERVIDOR RODANDO\nPorta: 8080\nAguardando conexões...");
             Toast.makeText(this, "Servidor iniciado!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String getLocalIpAddress() {
+        try {
+            WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifi == null) return null;
+            int ipAddress = wifi.getConnectionInfo().getIpAddress();
+            if (ipAddress == 0) return null;
+            return Formatter.formatIpAddress(ipAddress);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

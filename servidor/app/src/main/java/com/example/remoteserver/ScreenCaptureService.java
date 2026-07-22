@@ -1,6 +1,5 @@
 package com.example.remoteserver;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -19,6 +18,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
+
+import androidx.core.app.NotificationCompat;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -55,13 +56,12 @@ public class ScreenCaptureService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Notification notification = new Notification.Builder(this, "screen_channel")
+        NotificationCompat.Builder nb = new NotificationCompat.Builder(this, "screen_channel")
             .setContentTitle("Remote Server")
             .setContentText("Servidor ativo - Porta 8080")
-            .setSmallIcon(android.R.drawable.ic_menu_info_details)
-            .build();
+            .setSmallIcon(android.R.drawable.ic_menu_info_details);
         
-        startForeground(1, notification);
+        startForeground(1, nb.build());
 
         int resultCode = intent.getIntExtra("resultCode", -1);
         Intent data = intent.getParcelableExtra("data");
@@ -161,12 +161,11 @@ public class ScreenCaptureService extends Service {
 
     private void updateNotification(String text) {
         NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        Notification notification = new Notification.Builder(this, "screen_channel")
+        NotificationCompat.Builder nb = new NotificationCompat.Builder(this, "screen_channel")
             .setContentTitle("Remote Server")
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.ic_menu_info_details)
-            .build();
-        mgr.notify(1, notification);
+            .setSmallIcon(android.R.drawable.ic_menu_info_details);
+        mgr.notify(1, nb.build());
     }
 
     private void createNotificationChannel() {
