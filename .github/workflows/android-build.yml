@@ -45,8 +45,8 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Build APKs (assembleDebug)
-        run: gradle --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
+      - name: Build APKs (assembleDebug with stacktrace)
+        run: gradle --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug --stacktrace
 
       - name: Upload servidor APK
         uses: actions/upload-artifact@v4
