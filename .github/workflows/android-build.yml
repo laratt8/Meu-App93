@@ -24,10 +24,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle 8.0
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.0'
+      - name: Download and Setup Gradle 8.1.1
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.1.1-bin.zip
+          unzip -q gradle-8.1.1-bin.zip
+          echo "$PWD/gradle-8.1.1/bin" >> $GITHUB_PATH
 
       - name: Install Android command-line tools (sdkmanager)
         run: |
@@ -45,8 +46,8 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Build APKs (clean and assembleDebug with info)
-        run: gradle --no-daemon clean :servidor:app:assembleDebug :cliente:app:assembleDebug --info
+      - name: Build APKs (assembleDebug)
+        run: gradle --no-daemon clean :servidor:app:assembleDebug :cliente:app:assembleDebug
 
       - name: Upload servidor APK
         uses: actions/upload-artifact@v4
