@@ -1,2 +1,0 @@
-include ':servidor:app', ':cliente:app'
-rootProject.name = "RemoteScreen-Android"
