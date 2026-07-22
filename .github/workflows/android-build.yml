@@ -1,89 +1,92 @@
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+name: Android CI - Build APKs
 
-  - name: Set up JDK 17
-    uses: actions/setup-java@v4
-    with:
-      distribution: 'temurin'
-      java-version: '17'
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
-  - name: Cache Gradle
-    uses: actions/cache@v4
-    with:
-      path: |
-        ~/.gradle/caches
-        ~/.gradle/wrapper
-      key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-      restore-keys: |
-        ${{ runner.os }}-gradle-
+jobs:
+  build:
+    name: Build server and client APKs
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-  - name: Ensure gradlew (use wrapper if present, else install system gradle)
-    run: |
-      if [ -f ./gradlew ]; then
-        echo "gradlew encontrado no repositório"
-        chmod +x ./gradlew || true
-      else
-        echo "gradlew não encontrado — instalando gradle via apt"
-        sudo apt-get update
-        sudo apt-get install -y gradle unzip curl
-        gradle --version || true
-        # tenta gerar wrapper a partir do gradle do sistema (opcional)
-        if command -v gradle >/dev/null 2>&1; then
-          echo "Tentando gerar gradle wrapper via 'gradle wrapper' (pode falhar se build script exigir wrapper específico)"
-          gradle wrapper || true
-          [ -f ./gradlew ] && chmod +x ./gradlew || true
-        fi
-      fi
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Install Android command-line tools (sdkmanager) if missing
-    run: |
-      set -e
-      if ! command -v sdkmanager >/dev/null 2>&1; then
-        echo "sdkmanager não encontrado. Instalando Android commandline tools..."
-        mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-        cd $HOME
-        curl -fLo commandlinetools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
-        unzip -q commandlinetools.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-        # move to 'latest' so sdkmanager path is predictable
-        if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
-          mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
-        fi
-        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
-      else
-        echo "sdkmanager já disponível"
-      fi
-      export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
-      yes | sdkmanager --licenses
-      sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-  - name: Show env (debug)
-    run: |
-      echo "Using gradlew? " && [ -f ./gradlew ] && echo "yes" || echo "no"
-      java -version
-      sdkmanager --version || true
-      echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-      ls -la
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-  - name: Build APKs (assembleDebug)
-    run: |
-      if [ -f ./gradlew ]; then
-        echo "Usando ./gradlew"
-        ./gradlew --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
-      else
-        echo "Usando gradle do sistema"
-        gradle --version
-        gradle --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
-      fi
+      - name: Ensure gradlew (use wrapper if present, else install system gradle)
+        run: |
+          if [ -f ./gradlew ]; then
+            echo "gradlew encontrado no repositório"
+            chmod +x ./gradlew || true
+          else
+            echo "gradlew não encontrado — instalando gradle via apt"
+            sudo apt-get update
+            sudo apt-get install -y gradle unzip curl
+            gradle --version || true
+            if command -v gradle >/dev/null 2>&1; then
+              echo "Tentando gerar gradle wrapper via 'gradle wrapper'"
+              gradle wrapper || true
+              [ -f ./gradlew ] && chmod +x ./gradlew || true
+            fi
+          fi
 
-  - name: Upload servidor APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: servidor-debug-apk
-      path: servidor/app/build/outputs/apk/debug/*.apk
+      - name: Install Android command-line tools (sdkmanager) if missing
+        run: |
+          set -e
+          if ! command -v sdkmanager >/dev/null 2>&1; then
+            echo "sdkmanager não encontrado. Instalando Android commandline tools..."
+            mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+            cd $HOME
+            curl -fLo commandlinetools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
+            unzip -q commandlinetools.zip -d $ANDROID_SDK_ROOT/cmdline-tools
+            if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
+              mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
+            fi
+            export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          else
+            echo "sdkmanager já disponível"
+          fi
+          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-  - name: Upload cliente APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: cliente-debug-apk
-      path: cliente/app/build/outputs/apk/debug/*.apk
+      - name: Build APKs (assembleDebug)
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
+          else
+            gradle --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
+          fi
+
+      - name: Upload servidor APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: servidor-debug-apk
+          path: servidor/app/build/outputs/apk/debug/*.apk
+
+      - name: Upload cliente APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cliente-debug-apk
+          path: cliente/app/build/outputs/apk/debug/*.apk
