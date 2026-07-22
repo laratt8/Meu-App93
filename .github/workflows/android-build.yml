@@ -24,38 +24,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      - name: Setup Gradle 8.0
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-version: '8.0'
 
-      - name: Ensure gradlew (use wrapper if present, else install system gradle)
-        run: |
-          if [ -f ./gradlew ]; then
-            echo "gradlew encontrado no repositório"
-            chmod +x ./gradlew || true
-          else
-            echo "gradlew não encontrado — instalando gradle via apt"
-            sudo apt-get update
-            sudo apt-get install -y gradle unzip curl
-            gradle --version || true
-            if command -v gradle >/dev/null 2>&1; then
-              echo "Tentando gerar gradle wrapper via 'gradle wrapper'"
-              gradle wrapper || true
-              [ -f ./gradlew ] && chmod +x ./gradlew || true
-            fi
-          fi
-
-      - name: Install Android command-line tools (sdkmanager) if missing
+      - name: Install Android command-line tools (sdkmanager)
         run: |
           set -e
           if ! command -v sdkmanager >/dev/null 2>&1; then
-            echo "sdkmanager não encontrado. Instalando Android commandline tools..."
             mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
             cd $HOME
             curl -fLo commandlinetools.zip "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"
@@ -63,21 +40,13 @@ jobs:
             if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" ]; then
               mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
             fi
-            export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
-          else
-            echo "sdkmanager já disponível"
           fi
           export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Build APKs (assembleDebug)
-        run: |
-          if [ -f ./gradlew ]; then
-            ./gradlew --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
-          else
-            gradle --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
-          fi
+        run: gradle --no-daemon :servidor:app:assembleDebug :cliente:app:assembleDebug
 
       - name: Upload servidor APK
         uses: actions/upload-artifact@v4
