@@ -144,11 +144,12 @@ public class ScreenCaptureService extends Service {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos);
             byte[] jpegData = baos.toByteArray();
 
-            for (WebSocket client : Collections.list(server.getConnections())) {
-                if (client.isOpen()) {
-                    client.send(jpegData);
-                }
-            }
+
+for (WebSocket client : server.getConnections()) {
+    if (client.isOpen()) {
+        client.send(jpegData);
+    }
+}
 
             bitmap.recycle();
             
